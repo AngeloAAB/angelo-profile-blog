@@ -132,7 +132,7 @@ async function navigate(page, id = null) {
     if (page === 'post' && id) {
         try {
             // Using absolute path to prevent 404 on sub-routes
-            const response = await fetch('data/posts.json');
+            const response = await fetch('./data/posts.json');
             const posts = await response.json();
             const post = posts.find(p => p.id === id);
 
@@ -198,7 +198,7 @@ document.addEventListener('click', (e) => {
         const page = target.getAttribute('data-link');
         const id = target.getAttribute('data-id');
         
-        const url = id ? `post/${id}` : (page === 'home' ? '/' : `/${page}`);
+        const url = id ? `#post/${id}` : (page === 'home' ? '/' : `#${page}`);
         history.pushState({ page, id }, "", url);
         navigate(page, id);
     }
