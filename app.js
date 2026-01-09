@@ -151,7 +151,7 @@ async function navigate(page, id = null) {
             }
             return;
         } catch (err) {
-            appContainer.innerHTML = '<p>Error loading article. Check if /data/posts.json exists.</p>';
+            appContainer.innerHTML = '<p>Error loading article. Check if data/posts.json exists.</p>';
             return;
         }
     }
