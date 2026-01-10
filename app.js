@@ -128,46 +128,95 @@ const routes = {
 const appContainer = document.getElementById('app');
 
 async function navigate(page, id = null) {
-// 1. Handle Single Post View
-    if (page === 'post' && id) {
-        try {
-            // Using absolute path to prevent 404 on sub-routes
-            const response = await fetch('./data/posts.json');
-            const posts = await response.json();
-            const post = posts.find(p => p.id === id);
-
-            if (post) {
-                appContainer.innerHTML = `
-                    <article class="post-detail">
-                        <h1>${post.title}</h1>
-                        <small>${post.date}</small>
-                        <div class="post-content">${post.content}</div>
-                        <br>
-                        <button data-link="blog" style="cursor:pointer; padding: 10px; border:none; background: var(--primary-color); color: white; border-radius: 5px;">← Back to Blog</button>
-                    </article>
-                `;
-            } else {
-                appContainer.innerHTML = '<h1>Post not found</h1>';
-            }
-            return;
-        } catch (err) {
-            appContainer.innerHTML = '<p>Error loading article. Check if data/posts.json exists.</p>';
-            return;
-        }
-    }
-
-// 2. Handle Regular Routes
-    appContainer.innerHTML = routes[page] || '<h1>404</h1><p>Page not found</p>';
+    const content = document.getElementById('content');
+    
+    // Smooth transition: scroll to top on every navigation
+    window.scrollTo(0, 0);
 
     if (page === 'blog') {
+        content.innerHTML = '<div class="loading">Loading posts...</div>';
+        
         try {
-            const response = await fetch('data/posts.json');
+            /** * THE FIX: Using './data/posts.json' 
+             * The './' tells the browser to look in the CURRENT folder 
+             * where app.js is running, which avoids 404s on GitHub.
+             */
+            const response = await fetch('./data/posts.json');
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load posts.json (Status: ${response.status})`);
+            }
+
             const posts = await response.json();
-            renderBlog(posts);
+            
+            // Check if we are viewing a single post or the full list
+            if (id) {
+                const post = posts.find(p => p.id === id);
+                if (post) {
+                    renderSinglePost(post);
+                } else {
+                    content.innerHTML = `<h2>Post not found</h2><a href="#" data-link="blog" class="back-btn">← Back to Blog</a>`;
+                }
+            } else {
+                renderBlogList(posts);
+            }
         } catch (error) {
-            document.getElementById('blog-list').innerHTML = '<p>Unable to load posts.</p>';
+            console.error("Critical Error:", error);
+            content.innerHTML = `
+                <div class="error-box">
+                    <h2>Oops! Something went wrong.</h2>
+                    <p>We couldn't load the blog data. This usually happens due to pathing issues on the server.</p>
+                    <p><small>${error.message}</small></p>
+                    <button onclick="location.reload()" class="contact-btn">Retry Loading</button>
+                </div>
+            `;
         }
+    } else {
+        // Handle Home or other static pages
+        content.innerHTML = routes[page] || routes.home;
     }
+}
+
+/**
+ * Helper to render the list of blog cards
+ */
+function renderBlogList(posts) {
+    const content = document.getElementById('content');
+    let html = '<h1>Blog</h1><div class="projects-grid">';
+    
+    posts.forEach(post => {
+        html += `
+            <div class="project-card fade-in">
+                <span class="date">${post.date}</span>
+                <h3>${post.title}</h3>
+                <p>${post.summary}</p>
+                <a href="#post/${post.id}" data-link="blog" data-id="${post.id}" class="read-more">Read More →</a>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+/**
+ * Helper to render a single full blog post
+ */
+function renderSinglePost(post) {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <article class="single-post fade-in">
+            <a href="#" data-link="blog" class="back-btn">← Back to Blog</a>
+            <header>
+                <h1>${post.title}</h1>
+                <span class="date">Published on ${post.date}</span>
+            </header>
+            <hr>
+            <div class="post-content">
+                ${post.content}
+            </div>
+        </article>
+    `;
 }
 
 // 3. Render Blog Posts
